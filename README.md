@@ -2,9 +2,8 @@
 
 HobbyHub is a social platform for connecting people through shared hobbies and interest-based groups. This backend is built using **Java 17**, **Spring Boot**, and **PostgreSQL**.
 
----
 
-## 📌 Features
+##  Features
 
 - User Registration & Authentication
 - Hobby selection and tracking
@@ -15,7 +14,7 @@ HobbyHub is a social platform for connecting people through shared hobbies and i
 
 ---
 
-## 🛠 Tech Stack
+##  Tech Stack
 
 | Layer       | Technology       |
 |------------|------------------|

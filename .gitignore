@@ -31,3 +31,16 @@ build/
 
 ### VS Code ###
 .vscode/
+
+# macOS system files
+.DS_Store
+
+# Java build output
+target/
+build/
+
+# Log files
+*.log
+
+# Local environment variables
+.env
