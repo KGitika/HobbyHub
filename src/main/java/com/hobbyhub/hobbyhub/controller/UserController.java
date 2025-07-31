@@ -1,5 +1,6 @@
 package com.hobbyhub.hobbyhub.controller;
 
+import com.hobbyhub.hobbyhub.entity.Hobby;
 import com.hobbyhub.hobbyhub.entity.User;
 import com.hobbyhub.hobbyhub.service.UserService;
 
@@ -58,5 +59,21 @@ public class UserController {
     public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
         userService.deleteUser(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/{id}/hobbies")
+    public List<Hobby> getUserHobbies(@PathVariable Long id) {
+        return userService.getUserHobbies(id);
+    }
+
+    @PostMapping("/{id}/hobbies")
+    public ResponseEntity<Void> addHobbiesToUser(@PathVariable Long id, @RequestBody List<Long> hobbyIds) {
+        userService.addHobbiesToUser(id, hobbyIds);
+        return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/{id}/recommendations")
+    public List<Hobby> getRecommendations(@PathVariable Long id) {
+        return userService.recommendHobbies(id);
     }
 }
