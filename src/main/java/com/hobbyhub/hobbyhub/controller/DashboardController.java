@@ -28,7 +28,7 @@ public class DashboardController {
         int upcomingEvents = (int) user.getRsvpedEvents().stream()
                 .filter(e -> e.getDate().isAfter(OffsetDateTime.now()))
                 .count();
-        int newConnections = user.getGroups().stream().mapToInt(g -> g.getMembers().size()).sum() - joinedGroups;
+        int newConnections = 0;
         int interestedHobbiesCount = user.getHobbies().size();
 
         Map<String, Object> resp = new HashMap<>();
@@ -49,7 +49,7 @@ public class DashboardController {
         int upcomingEventsCount = (int) user.getRsvpedEvents().stream()
                 .filter(e -> e.getDate().isAfter(OffsetDateTime.now()))
                 .count();
-        int newConnectionsCount = user.getGroups().stream().mapToInt(g -> g.getMembers().size()).sum() - joinedGroupsCount;
+        int newConnectionsCount = 0;
         int interestedHobbiesCount = user.getHobbies().size();
 
         return new DashboardSummaryDTO(joinedGroupsCount, upcomingEventsCount, newConnectionsCount, interestedHobbiesCount);
