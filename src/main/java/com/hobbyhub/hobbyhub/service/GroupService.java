@@ -6,7 +6,10 @@ import com.hobbyhub.hobbyhub.entity.User;
 import com.hobbyhub.hobbyhub.repository.GroupRepository;
 import com.hobbyhub.hobbyhub.repository.HobbyRepository;
 import com.hobbyhub.hobbyhub.repository.UserRepository;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -27,6 +30,7 @@ public class GroupService {
         return groupRepository.findByHobby(hobby);
     }
 
+    @Transactional
     public void joinGroup(Long groupId, Long userId) {
         Group group = groupRepository.findById(groupId).orElseThrow();
         User user = userRepository.findById(userId).orElseThrow();
@@ -35,5 +39,49 @@ public class GroupService {
         groupRepository.save(group);
         userRepository.save(user);
     }
-}
 
+    @Transactional
+    public void leaveGroup(Long groupId, Long userId) {
+        Group group = groupRepository.findById(groupId).orElseThrow();
+        User user = userRepository.findById(userId).orElseThrow();
+        group.getMembers().remove(user);
+        user.getGroups().remove(group);
+        groupRepository.save(group);
+        userRepository.save(user);
+    }
+
+    public java.util.Optional<Group> getGroup(Long id) {
+        return groupRepository.findById(id);
+    }
+
+    public List<Group> getAllGroups() {
+        return groupRepository.findAll();
+    }
+
+    @Transactional
+    public Group createGroup(String name, String hobbyName, String description, User creator) {
+        Hobby hobby = hobbyRepository.findByName(hobbyName).orElseThrow();
+        User creatorEntity = userRepository.findById(creator.getId()).orElseThrow();
+        Group group = new Group(name, description, hobby);
+        group.setOwner(creatorEntity);
+        group.getMembers().add(creatorEntity);
+        creatorEntity.getGroups().add(group);
+        Group saved = groupRepository.save(group);
+        userRepository.save(creatorEntity);
+        return saved;
+    }
+
+    @Transactional
+    public void deleteGroup(Long groupId, Long userId) {
+        Group group = groupRepository.findById(groupId).orElseThrow();
+        if (group.getOwner() == null || !group.getOwner().getId().equals(userId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only the owner may delete this group");
+        }
+        for (User member : group.getMembers()) {
+            member.getGroups().remove(group);
+            userRepository.save(member);
+        }
+        group.getMembers().clear();
+        groupRepository.delete(group);
+    }
+}

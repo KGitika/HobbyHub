@@ -1,5 +1,6 @@
 package com.hobbyhub.hobbyhub.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import java.util.HashSet;
 import java.util.Set;
@@ -18,10 +19,17 @@ public class Group {
     @JoinColumn(name = "hobby_id")
     private Hobby hobby;
 
+    @ManyToOne
+    @JoinColumn(name = "owner_id")
+    @JsonIgnoreProperties({"groups", "hobbies", "rsvpedEvents", "password"})
+    private User owner;
+
     @ManyToMany(mappedBy = "groups")
+    @JsonIgnoreProperties({"groups", "hobbies", "rsvpedEvents", "password"})
     private Set<User> members = new HashSet<>();
 
     @OneToMany(mappedBy = "group", cascade = CascadeType.ALL)
+    @JsonIgnoreProperties({"group", "attendees"})
     private Set<Event> events = new HashSet<>();
 
     public Group() {}
@@ -43,6 +51,9 @@ public class Group {
 
     public Hobby getHobby() { return hobby; }
     public void setHobby(Hobby hobby) { this.hobby = hobby; }
+
+    public User getOwner() { return owner; }
+    public void setOwner(User owner) { this.owner = owner; }
 
     public Set<User> getMembers() { return members; }
     public void setMembers(Set<User> members) { this.members = members; }

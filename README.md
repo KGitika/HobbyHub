@@ -2,6 +2,8 @@
 
 HobbyHub is a social platform for connecting people through shared hobbies and interest-based groups. This backend is built using **Java 17**, **Spring Boot**, and **PostgreSQL**.
 
+This update introduces basic JWT-based authentication with signup, login and a `/users/me` endpoint that returns the authenticated user profile. A placeholder `/activities/recent` endpoint is also available and currently returns an empty list. See [`openapi.yaml`](openapi.yaml) for a minimal OpenAPI description of the available endpoints.
+
 
 ##  Features
 
@@ -72,11 +74,14 @@ HobbyHub is a social platform for connecting people through shared hobbies and i
 | Method | Route                            | Description                          |
 |--------|----------------------------------|--------------------------------------|
 | GET    | `/users/{id}/hobbies`            | Get user’s selected hobbies          |
-| POST   | `/users/{id}/hobbies`            | Add hobbies to a user                |
+| POST   | `/users/{id}/hobbies`            | Add hobbies to a user (`{"hobbyIds": [1,2]}`) |
 | GET    | `/groups/{hobbyId}`              | Fetch groups for a hobby             |
+| POST   | `/groups`                        | Create a new group                    |
 | POST   | `/groups/{hobbyId}/join`         | Join a group                         |
 | GET    | `/groups/{groupId}/events`       | Get all events in a group            |
 | GET    | `/users/{id}/recommendations`    | Get recommended hobbies based on tags|
+| GET    | `/recommendations/groups`        | Get recommended groups *(TODO)*       |
+| GET    | `/activities/recent`             | List recent activities *(TODO)*       |
 
 ---
 

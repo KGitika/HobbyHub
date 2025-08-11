@@ -1,15 +1,16 @@
 package com.hobbyhub.hobbyhub.controller;
 
-import com.hobbyhub.hobbyhub.entity.Hobby;
+import com.hobbyhub.hobbyhub.dto.HobbiesRequest;
+import com.hobbyhub.hobbyhub.dto.RecommendationDTO;
+import com.hobbyhub.hobbyhub.dto.UserDto;
+import com.hobbyhub.hobbyhub.dto.UserIdDTO;
 import com.hobbyhub.hobbyhub.entity.User;
 import com.hobbyhub.hobbyhub.service.UserService;
 
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
-//import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @CrossOrigin(origins = "http://localhost:5173")
@@ -17,10 +18,6 @@ import java.util.List;
 @RequestMapping("/users")
 public class UserController {
 
-    //    @GetMapping("/users")
-//    public List<String> getUsers() {
-//        return List.of("Alice", "Bob", "Charlie");
-//    }
     private final UserService userService;
 
     // Constructor injection
@@ -28,6 +25,13 @@ public class UserController {
         this.userService = userService;
     }
 
+    @GetMapping("/me")
+    public UserDto me(Authentication authentication) {
+        User user = (User) authentication.getPrincipal();
+        return userService.toDto(user);
+    }
+
+    // existing endpoints retained for backward compatibility
     @GetMapping
     public List<User> getAllUsers() {
         return userService.getAllUsers();
@@ -41,14 +45,16 @@ public class UserController {
     }
 
     @PostMapping
-    public User createUser(@RequestBody User user) {
-        return userService.createUser(user);
+    public UserIdDTO createUser(@RequestBody User user) {
+        User created = userService.createUser(user);
+        return new UserIdDTO(created.getId());
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<User> updateUser(@PathVariable Long id, @RequestBody User user) {
         try {
             User updated = userService.updateUser(id, user);
+            updated.setPassword(null);
             return ResponseEntity.ok(updated);
         } catch (RuntimeException e) {
             return ResponseEntity.notFound().build();
@@ -62,18 +68,22 @@ public class UserController {
     }
 
     @GetMapping("/{id}/hobbies")
-    public List<Hobby> getUserHobbies(@PathVariable Long id) {
+    public List<String> getUserHobbies(@PathVariable Long id) {
         return userService.getUserHobbies(id);
     }
 
     @PostMapping("/{id}/hobbies")
-    public ResponseEntity<Void> addHobbiesToUser(@PathVariable Long id, @RequestBody List<Long> hobbyIds) {
-        userService.addHobbiesToUser(id, hobbyIds);
-        return ResponseEntity.ok().build();
+    public ResponseEntity<java.util.Map<String, Boolean>> addHobbiesToUser(@PathVariable Long id, @RequestBody HobbiesRequest request) {
+        boolean success = userService.addHobbiesToUser(id, request.getHobbies());
+        if (!success) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(java.util.Map.of("ok", true));
     }
 
     @GetMapping("/{id}/recommendations")
-    public List<Hobby> getRecommendations(@PathVariable Long id) {
+    public List<RecommendationDTO> getRecommendations(@PathVariable Long id) {
         return userService.recommendHobbies(id);
     }
 }
+

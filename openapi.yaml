@@ -1,0 +1,329 @@
+openapi: 3.0.3
+info:
+  title: HobbyHub API
+  version: 0.1.0
+servers:
+  - url: http://localhost:8080
+paths:
+  /auth/signup:
+    post:
+      summary: Signup
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignUpRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+  /auth/login:
+    post:
+      summary: Login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignInRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+  /users/me:
+    get:
+      summary: Current user
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+  /groups:
+    post:
+      summary: Create a new group
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateGroupRequest'
+            example:
+              name: Astro Photographers
+              hobby: Photography
+              description: For night sky enthusiasts.
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Group'
+              example:
+                id: g_new
+                name: Astro Photographers
+                hobby: Photography
+                description: For night sky enthusiasts.
+                isMember: true
+                upcomingEvents: []
+  /groups/{id}:
+    delete:
+      summary: Delete the specified group
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+              example:
+                ok: true
+  /groups/{id}/leave:
+    delete:
+      summary: Leave the specified group
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupMembershipResponse'
+              example:
+                isMember: false
+  /recommendations/groups:
+    get:
+      summary: Get recommended groups
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object # TODO: define group recommendation schema
+  /activities/recent:
+    get:
+      summary: Get recent activities
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object # TODO: define activity schema
+  /dashboard/summary:
+    get:
+      summary: Get dashboard summary
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardSummary'
+  /events:
+    get:
+      summary: List events for joined groups
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Event'
+    post:
+      summary: Create event
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateEventRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Event'
+  /events/{id}/rsvp:
+    post:
+      summary: RSVP to event
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RsvpResponse'
+    delete:
+      summary: Cancel RSVP
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RsvpResponse'
+components:
+  schemas:
+    SignUpRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+      required: [name, email, password]
+    SignInRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+      required: [email, password]
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+        interests:
+          type: array
+          items:
+            type: string
+    LoginResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        user:
+          $ref: '#/components/schemas/User'
+    DashboardSummary:
+      type: object
+      properties:
+        joinedGroupsCount:
+          type: integer
+        upcomingEventsCount:
+          type: integer
+        newConnectionsCount:
+          type: integer
+        interestedHobbiesCount:
+          type: integer
+    CreateGroupRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        hobby:
+          type: string
+        description:
+          type: string
+      required: [name, hobby, description]
+    Group:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        hobby:
+          type: string
+        description:
+          type: string
+        isMember:
+          type: boolean
+        upcomingEvents:
+          type: array
+          items:
+            type: object # TODO: define event schema
+    Event:
+      type: object
+      properties:
+        id:
+          type: integer
+        groupId:
+          type: integer
+        title:
+          type: string
+        dateIso:
+          type: string
+          format: date-time
+        location:
+          type: string
+        isRsvped:
+          type: boolean
+    CreateEventRequest:
+      type: object
+      properties:
+        groupId:
+          type: integer
+        title:
+          type: string
+        dateIso:
+          type: string
+          format: date-time
+        location:
+          type: string
+      required: [groupId, title, dateIso, location]
+      RsvpResponse:
+        type: object
+        properties:
+          isRsvped:
+            type: boolean
+      GroupMembershipResponse:
+        type: object
+        properties:
+          isMember:
+            type: boolean

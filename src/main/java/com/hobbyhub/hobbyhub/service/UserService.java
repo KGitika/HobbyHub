@@ -1,12 +1,18 @@
 package com.hobbyhub.hobbyhub.service;
 
+import com.hobbyhub.hobbyhub.controller.AuthController;
 import com.hobbyhub.hobbyhub.entity.Hobby;
 import com.hobbyhub.hobbyhub.entity.Tag;
 import com.hobbyhub.hobbyhub.entity.User;
+import com.hobbyhub.hobbyhub.dto.RecommendationDTO;
+import com.hobbyhub.hobbyhub.dto.UserDto;
 import com.hobbyhub.hobbyhub.repository.HobbyRepository;
 import com.hobbyhub.hobbyhub.repository.TagRepository;
 import com.hobbyhub.hobbyhub.repository.UserRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import java.util.List;
 import java.util.Optional;
@@ -17,9 +23,12 @@ public class UserService {
     private final UserRepository userRepository;
     private final HobbyRepository hobbyRepository;
     private final TagRepository tagRepository;
+    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+
+    private static final Logger logger = LoggerFactory.getLogger(UserService.class);
 
     // Constructor injection
-    public UserService(UserRepository userRepository, HobbyRepository hobbyRepository, TagRepository tagRepository)  {
+    public UserService(UserRepository userRepository, HobbyRepository hobbyRepository, TagRepository tagRepository) {
         this.userRepository = userRepository;
         this.hobbyRepository = hobbyRepository;
         this.tagRepository = tagRepository;
@@ -34,6 +43,7 @@ public class UserService {
     }
 
     public User createUser(User user) {
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
         return userRepository.save(user);
     }
 
@@ -42,6 +52,9 @@ public class UserService {
                 .map(user -> {
                     user.setName(updatedUser.getName());
                     user.setEmail(updatedUser.getEmail());
+                    if (updatedUser.getPassword() != null) {
+                        user.setPassword(passwordEncoder.encode(updatedUser.getPassword()));
+                    }
                     return userRepository.save(user);
                 })
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -51,21 +64,23 @@ public class UserService {
         userRepository.deleteById(id);
     }
 
-    public List<Hobby> getUserHobbies(Long userId) {
+    public List<String> getUserHobbies(Long userId) {
         User user = userRepository.findById(userId).orElseThrow();
-        return List.copyOf(user.getHobbies());
+        return user.getHobbies().stream()
+                .map(Hobby::getName)
+                .toList();
     }
 
-    public void addHobbiesToUser(Long userId, List<Long> hobbyIds) {
-        User user = userRepository.findById(userId).orElseThrow();
-        for (Long hid : hobbyIds) {
-            Hobby hobby = hobbyRepository.findById(hid).orElseThrow();
-            user.getHobbies().add(hobby);
+    public boolean addHobbiesToUser(Long userId, List<String> hobbyNames) {
+        var userOpt = userRepository.findById(userId);
+        if (userOpt.isEmpty()) {
+            return false;
         }
-        userRepository.save(user);
+        updateInterests(userId, hobbyNames);
+        return true;
     }
 
-    public List<Hobby> recommendHobbies(Long userId) {
+    public List<RecommendationDTO> recommendHobbies(Long userId) {
         User user = userRepository.findById(userId).orElseThrow();
         // collect tags of user's hobbies
         var tags = new HashSet<Tag>();
@@ -74,17 +89,40 @@ public class UserService {
         }
         // find hobbies with those tags excluding already added hobbies
         List<Hobby> all = hobbyRepository.findAll();
-        List<Hobby> result = new java.util.ArrayList<>();
+        List<RecommendationDTO> result = new java.util.ArrayList<>();
         for (Hobby h : all) {
             if (!user.getHobbies().contains(h)) {
                 for (Tag t : h.getTags()) {
                     if (tags.contains(t)) {
-                        result.add(h);
+                        result.add(new RecommendationDTO("🎯", h.getName(), 95));
                         break;
                     }
                 }
             }
         }
         return result;
+    }
+
+    public Optional<User> authenticate(String email, String rawPassword) {
+        return userRepository.findByEmail(email)
+                .filter(u -> passwordEncoder.matches(rawPassword, u.getPassword()));
+    }
+
+    public UserDto toDto(User user) {
+        logger.info("Printing User: {}", user.getName());
+        User loadUser = userRepository.findById(user.getId()).orElseThrow();
+        java.util.List<String> interests = loadUser.getHobbies().stream()
+                .map(Hobby::getName)
+                .toList();
+        return new UserDto(loadUser.getId(), loadUser.getName(), loadUser.getEmail(), interests);
+    }
+
+    public void updateInterests(Long userId, java.util.List<String> interests) {
+        User user = userRepository.findById(userId).orElseThrow();
+        user.getHobbies().clear();
+        for (String name : interests) {
+            hobbyRepository.findByName(name).ifPresent(h -> user.getHobbies().add(h));
+        }
+        userRepository.save(user);
     }
 }
