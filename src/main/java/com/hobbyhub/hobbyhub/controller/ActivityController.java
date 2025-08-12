@@ -12,7 +12,6 @@ import java.util.List;
  * Temporary controller to satisfy frontend requests for recent activities.
  * TODO: implement actual activity tracking and retrieval.
  */
-@CrossOrigin(origins = "http://localhost:5173")
 @RestController
 @RequestMapping("/activities")
 public class ActivityController {
