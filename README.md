@@ -1,115 +1,149 @@
 # HobbyHub Backend – Spring Boot API
 
-HobbyHub is a social platform for connecting people through shared hobbies and interest-based groups. This backend is built using **Java 17**, **Spring Boot**, and **PostgreSQL**.
+HobbyHub is a social platform for connecting people through shared hobbies and interest-based groups.
 
-This update introduces basic JWT-based authentication with signup, login and a `/users/me` endpoint that returns the authenticated user profile. A placeholder `/activities/recent` endpoint is also available and currently returns an empty list. See [`openapi.yaml`](openapi.yaml) for a minimal OpenAPI description of the available endpoints.
+This backend is built with **Java 17**, **Spring Boot 3.5.3**, and **PostgreSQL**, and is deployed on **Render**.
 
+- **Live API (Render):** `https://hobbyhub-backend-whhm.onrender.com`
+- **Frontend (GitHub Pages):** `https://kgitika.github.io/hobbyhub-frontend/`
 
-##  Features
-
-- User Registration & Authentication
-- Hobby selection and tracking
-- Join hobby-based groups
-- View events per group
-- Tag-based recommendations for hobbies and groups
-- REST API design with clean separation of concerns
-
----
-
-##  Tech Stack
-
-| Layer       | Technology       |
-|------------|------------------|
-| Language    | Java 17          |
-| Framework   | Spring Boot 3.5.3 |
-| ORM         | Hibernate + JPA  |
-| Database    | PostgreSQL       |
-| Connection  | HikariCP         |
-| Packaging   | Maven            |
-| Deployment  | Render (planned) |
+> Auth uses JWT. Public endpoints: /auth/signup, /auth/login, /actuator/health.
+>
+>
+> Everything else requires `Authorization: Bearer <token>`.
+>
 
 ---
 
-## 🗃️ Database Models (Entities)
+## Features
 
-### User
-- `id`: Long (PK)
-- `name`: String
-- `email`: String
-- `password`: String
-
-### Hobby
-- `id`: Long (PK)
-- `name`: String
-- `description`: String
-
-### Group
-- `id`: Long (PK)
-- `title`: String
-- `description`: String
-- `hobby_id`: FK → Hobby
-
-### Event
-- `id`: Long (PK)
-- `title`: String
-- `description`: String
-- `date`: Date
-- `location`: String
-- `group_id`: FK → Group
-
-### Tag
-- `id`: Long (PK)
-- `name`: String
-
-### User_Hobby (Join Table)
-- `user_id`, `hobby_id`
-
-### Hobby_Tag (Join Table)
-- `hobby_id`, `tag_id`
+- **User registration & authentication** (JWT)
+- **User profile** via `/users/me`
+- **Hobby selection and tracking**
+- **Groups**: join hobby-based groups
+- **Events** per group & RSVP
+- **Recommendations** (hobbies/groups/events)
+- **CORS** configured for local dev and GitHub Pages
+- Placeholder: `/activities/recent` (returns empty list for now)
 
 ---
 
-## 🌐 API Endpoints
+## Tech Stack
 
-| Method | Route                            | Description                          |
-|--------|----------------------------------|--------------------------------------|
-| GET    | `/users/{id}/hobbies`            | Get user’s selected hobbies          |
-| POST   | `/users/{id}/hobbies`            | Add hobbies to a user (`{"hobbyIds": [1,2]}`) |
-| GET    | `/groups/{hobbyId}`              | Fetch groups for a hobby             |
-| POST   | `/groups`                        | Create a new group                    |
-| POST   | `/groups/{hobbyId}/join`         | Join a group                         |
-| GET    | `/groups/{groupId}/events`       | Get all events in a group            |
-| GET    | `/users/{id}/recommendations`    | Get recommended hobbies based on tags|
-| GET    | `/recommendations/groups`        | Get recommended groups *(TODO)*       |
-| GET    | `/activities/recent`             | List recent activities *(TODO)*       |
+| Layer | Technology |
+| --- | --- |
+| Language | Java 17 |
+| Framework | Spring Boot 3.5.3 |
+| ORM | Hibernate / JPA |
+| Database | PostgreSQL |
+| Pooling | HikariCP |
+| Build | Maven (wrapper included) |
+| Packaging | Fat JAR (Spring Boot) |
+| Deploy | Render (Docker) |
+| Docs | Minimal `openapi.yaml` (optional) |
 
 ---
 
-Run the Application
-  
-   ./mvnw spring-boot:run
+## Project Structure (High-Level)
 
-Testing
-    ./mvnw test
+**`src/main/java/com/hobbyhub/hobbyhub/`**
 
-🚀 Future Enhancements
-JWT-based authentication
+- **security/** – `SecurityConfig`, `JwtAuthFilter`
+- **config/** – Global application configuration (e.g., CORS settings) *(if present)*
+- **controllers/** – REST API controllers
+- **services/** – Business logic layer
+- **repositories/** – Spring Data JPA repositories
+- **entities/** – JPA entity classes
+- **logging/** – `RequestResponseLoggingFilter` and related logging utilities
+- **HobbyHubApplication.java** – Main application entry point
 
-Push notifications for upcoming events
+**`src/main/resources/`**
 
-AI-assisted hobby tagging
+- **application.properties** – Default configuration
+- **application-local.properties** – Local development configuration
+- **application-prod.properties** – Production configuration
 
-Chat between group members
+---
 
-Admin dashboard for moderation
+## Key Endpoints
 
-📚 Learning Highlights
-Built robust RESTful APIs with Spring Boot
+> Public
+>
+- `POST /auth/signup` — create account
+- `POST /auth/login` — returns JWT
+- `GET /actuator/health` — health probe
 
-Designed relational models using PostgreSQL with JPA
+> Authenticated (Authorization: Bearer <token>)
+>
+- `GET /users/me` — current user profile
+- `GET /users/{id}/hobbies` — user’s selected hobbies
+- `POST /users/{id}/hobbies` — set/update hobbies (e.g., `{"hobbyIds":[1,2,3]}`)
+- `GET /groups/{hobbyId}` — groups for a hobby
+- `POST /groups` — create group
+- `POST /groups/{hobbyId}/join` — join a group
+- `GET /groups/{groupId}/events` — events in a group
+- `GET /users/{id}/recommendations` — hobby recommendations
+- `GET /recommendations/groups` — group recommendations *(TODO)*
+- `GET /activities/recent` — recent activity *(placeholder, empty list)*
 
-Implemented many-to-many join tables for flexible hobby-group-user relations
+---
 
-Designed scalable backend architecture
+## Configuration
 
-Improved backend-debugging and API testing skills
+### Profiles
+
+- **local**: for development on your machine
+- **prod**: for Render
+
+Set with `SPRING_PROFILES_ACTIVE=local|prod`.
+
+### CORS (already configured)
+
+Allowed origins:
+
+- `http://localhost:5173`
+- `http://127.0.0.1:5173`
+- `https://kgitika.github.io` (GitHub Pages frontend)
+
+### 
+
+## Security & CORS
+
+- **SecurityConfig**: stateless JWT, public auth routes, protected APIs.
+- **CORS**: allows `http://localhost:5173`, `http://127.0.0.1:5173`, `https://kgitika.github.io`.
+- **Request/Response logging**: `RequestResponseLoggingFilter` added **before** auth filter.
+
+> Consider storing secrets in environment variables (e.g., JWT_SECRET) and rotating them regularly.
+>
+
+---
+
+## Database Model (Representative)
+
+> Actual table names/relations come from your JPA entities; below is a typical shape.
+>
+- **User**: `id`, `name`, `email` (unique), `password`
+- **Hobby**: `id`, `name`, `description`
+- **Group**: `id`, `title`, `description`, `hobby_id → Hobby`
+- **Event**: `id`, `title`, `description`, `date`, `location`, `group_id → Group`
+- **Tag**: `id`, `name`
+- **user_hobby**: `user_id`, `hobby_id`
+- **hobby_tag**: `hobby_id`, `tag_id`
+
+## Future Enhancements
+
+- Finalize **Connections** feature (frontend already hides the UI)
+- Push notifications for upcoming events
+- AI-assisted hobby tagging
+- Group chat
+- Admin moderation tools
+
+---
+
+## Learning Highlights
+
+- Robust, layered REST API with Spring Boot
+- Relational modeling with JPA & PostgreSQL (many-to-many joins)
+- JWT authentication & stateless security
+- Dockerized build and cloud deployment on Render
+- Operational skills: logs, CORS, schema management, data migration
